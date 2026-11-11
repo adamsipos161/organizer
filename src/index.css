@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Pokojné, neutrálne farby; akcent = modrá */
+@theme {
+  --color-accent-50: #eef3fd;
+  --color-accent-100: #dbe6fb;
+  --color-accent-500: #3f6fd8;
+  --color-accent-600: #2f5bc0;
+  --color-ink-900: #1c2230;
+  --color-ink-700: #3a4253;
+  --color-ink-500: #6b7385;
+  --color-ink-300: #aab0bd;
+  --color-line: #e6e8ee;
+  --color-canvas: #f7f8fa;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+}
+
+html, body, #root { height: 100%; }
+body { @apply bg-canvas text-ink-900 antialiased; -webkit-tap-highlight-color: transparent; }
+.num { font-variant-numeric: tabular-nums; }
+@utility focus-ring { @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50; }
+
+@utility input { @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20; }
+@utility btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed focus-ring; }
+@utility btn-primary { @apply btn bg-accent-500 text-white hover:bg-accent-600; }
+@utility btn-ghost { @apply btn text-ink-700 hover:bg-black/5; }
+@utility btn-outline { @apply btn border border-line bg-white text-ink-700 hover:bg-black/[0.03]; }
+@utility btn-danger { @apply btn text-red-600 hover:bg-red-50; }
+@utility label { @apply text-xs font-medium text-ink-500; }
+@utility section-title { @apply mt-6 mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-500; }
+
+@media (max-width: 767px) {
+  /* iOS nezväčšuje stránku pri písaní, ak má pole aspoň 16 px */
+  .input, input, select, textarea { font-size: 16px !important; }
+}
