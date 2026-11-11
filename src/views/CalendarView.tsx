@@ -16,7 +16,7 @@ export function CalendarView() {
   const title = mode === 'month' ? monthTitle(anchor) : `${formatDay(ws)} – ${formatDay(addDays(ws, 6))}`
 
   return (
-    <div className="flex h-full flex-col px-3 pb-24 pt-4 md:px-6 md:pb-6">
+    <div className="flex h-full flex-col px-3 pb-6 pt-4 md:px-6 md:pb-6">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-xl font-semibold md:text-2xl">{title}</h1>
         <div className="flex rounded-lg border border-line bg-white p-0.5 text-sm">

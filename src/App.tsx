@@ -8,6 +8,7 @@ import { LoginView } from './views/Login'
 import { SearchView, TaskListView, TodayView, UpcomingView } from './views/Lists'
 import { CalendarView } from './views/CalendarView'
 import { SettingsView } from './views/Settings'
+import { refreshCounts } from './lib/attachments'
 
 export function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -25,6 +26,8 @@ export function App() {
     if (session?.user) void store.start(session.user.id)
     else if (session === null) store.stop()
   }, [session?.user?.id, session])
+
+  useEffect(() => { if (loaded && session?.user) void refreshCounts() }, [loaded, session?.user?.id])
 
   if (configError) return <div className="m-6 max-w-xl rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{configError}</div>
   if (session === undefined) return null

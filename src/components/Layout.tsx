@@ -58,7 +58,23 @@ export function Layout({ children, search, setSearch }: { children: ReactNode; s
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-line bg-canvas/90 px-3 py-2 backdrop-blur md:px-6">
+        <div className="flex min-h-0 flex-1">
+          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+          <DetailPanel />
+        </div>
+        <footer className="z-30 border-t border-line bg-canvas/95 px-3 pt-2 pb-[calc(64px+env(safe-area-inset-bottom))] backdrop-blur md:px-6 md:pb-3">
+          {status.message && (
+            <div className={clsx('mb-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs', status.phase === 'error' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800')}>
+              <span className="flex-1">{status.message}</span>
+              <button onClick={() => store.clearMessage()} aria-label="Zavrieť"><X size={12} /></button>
+            </div>
+          )}
+          <div className="relative mb-2 lg:hidden">
+            <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-300" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Hľadať úlohy, poznámky, stretnutia" aria-label="Hľadať"
+              className="input py-1.5 pl-8 pr-7" ref={el => { if (window.innerWidth < 1024) searchRef.current = el }} />
+            {search && <button className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-300" onClick={() => setSearch('')}><X size={14} /></button>}
+          </div>
           <div className="flex items-center gap-2">
             <button className="btn-ghost px-2 md:hidden" onClick={() => setDrawer(true)} aria-label="Menu"><Menu size={18} /></button>
             <div className="min-w-0 flex-1"><QuickAdd defaultProjectId={projectId} /></div>
@@ -73,24 +89,7 @@ export function Layout({ children, search, setSearch }: { children: ReactNode; s
             <button className="btn-ghost hidden px-2 md:inline-flex" disabled={!canRedo} title="Znova (⇧⌘Z)" onClick={() => { const l = store.redo(); if (l) ui.toast(`Znova: ${l}`) }}><Redo2 size={16} /></button>
             <SyncBadge phase={status.phase} pending={status.pending} message={status.message} />
           </div>
-          <div className="relative mt-2 lg:hidden">
-            <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-300" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Hľadať úlohy, poznámky, stretnutia" aria-label="Hľadať"
-              className="input py-1.5 pl-8 pr-7" ref={el => { if (window.innerWidth < 1024) searchRef.current = el }} />
-            {search && <button className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-300" onClick={() => setSearch('')}><X size={14} /></button>}
-          </div>
-          {status.message && (
-            <div className={clsx('mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs', status.phase === 'error' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800')}>
-              <span className="flex-1">{status.message}</span>
-              <button onClick={() => store.clearMessage()} aria-label="Zavrieť"><X size={12} /></button>
-            </div>
-          )}
-        </header>
-
-        <div className="flex min-h-0 flex-1">
-          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
-          <DetailPanel />
-        </div>
+        </footer>
 
         <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
           {[

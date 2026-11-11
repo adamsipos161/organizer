@@ -80,7 +80,7 @@ export function QuickAdd({ defaultProjectId }: { defaultProjectId: string | null
       </div>
 
       {parsed && (
-        <div className="absolute inset-x-0 top-full z-30 mt-1.5 rounded-xl border border-line bg-white p-3 text-sm shadow-lg">
+        <div className="absolute inset-x-0 bottom-full z-30 mb-1.5 max-h-[60vh] overflow-y-auto rounded-xl border border-line bg-white p-3 text-sm shadow-lg">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <button onClick={() => setKindOverride(kind === 'task' ? 'meeting' : 'task')} title="Prepnúť úloha / stretnutie"
               className="inline-flex items-center gap-1.5 rounded-md bg-accent-50 px-2 py-1 font-medium text-accent-600 hover:bg-accent-100">

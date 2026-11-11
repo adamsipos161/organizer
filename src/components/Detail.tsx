@@ -8,6 +8,8 @@ import {
 import { dayOfIso, formatDateTime, formatDayLong, minutesBetween, parseTime, relativeDay, timeOf, zonedToUtc } from '../lib/dates'
 import { PRIORITY_LABEL, STATUS_LABEL, type Meeting, type Task, type TaskStatus } from '../lib/types'
 import { CheckCircle, useToggleDone } from './rows'
+import { AttachmentsSection } from './Attachments'
+import { deleteAllForTask, useAttachmentCount } from '../lib/attachments'
 import { useUi } from './ui'
 
 export function DetailPanel() {
@@ -57,6 +59,7 @@ function TaskDetail({ task }: { task: Task }) {
   const ui = useUi()
   const toggle = useToggleDone()
   const [newSub, setNewSub] = useState('')
+  const attCount = useAttachmentCount(task.id)
   const done = task.status === 'done'
   const projects = activeProjects(data)
   const current = data.projects.find(p => p.id === task.project_id)
@@ -124,6 +127,8 @@ function TaskDetail({ task }: { task: Task }) {
         </div>
       </div>
 
+      <AttachmentsSection taskId={task.id} />
+
       <div>
         <span className="label">Poznámka</span>
         <EditableText multiline value={task.note} onCommit={v => updateTask(task.id, 'Upravená poznámka', t => { t.note = v })} placeholder="Poznámka…"
@@ -133,8 +138,16 @@ function TaskDetail({ task }: { task: Task }) {
       <div className="flex items-center justify-between border-t border-line pt-3 text-xs text-ink-300">
         <span>Vytvorené {formatDateTime(task.created_at)}{task.completed_at ? ` · hotové ${formatDateTime(task.completed_at)}` : ''}</span>
         <button className="btn-danger px-2" onClick={async () => {
-          const v = await ui.confirm({ title: `Zmazať úlohu „${task.title}“?`, message: 'Dá sa vrátiť tlačidlom Späť.', buttons: [{ label: 'Zmazať', value: 'del', tone: 'danger' }] })
-          if (v) { ui.select(null); deleteTask(task.id); ui.toast('Úloha zmazaná', { undo: true }) }
+          const v = await ui.confirm({
+            title: `Zmazať úlohu „${task.title}“?`,
+            message: attCount > 0 ? `Natrvalo sa zmaže aj ${attCount} ${attCount === 1 ? 'príloha' : attCount < 5 ? 'prílohy' : 'príloh'}. Úlohu bude možné vrátiť tlačidlom Späť, prílohy nie.` : 'Dá sa vrátiť tlačidlom Späť.',
+            buttons: [{ label: 'Zmazať', value: 'del', tone: 'danger' }],
+          })
+          if (!v) return
+          if (attCount > 0) {
+            try { await deleteAllForTask(task.id) } catch (e) { ui.toast(`Prílohy sa nepodarilo zmazať: ${(e as Error).message}`); return }
+          }
+          ui.select(null); deleteTask(task.id); ui.toast('Úloha zmazaná', { undo: true })
         }}><Trash2 size={14} />Zmazať</button>
       </div>
     </div>

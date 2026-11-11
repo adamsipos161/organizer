@@ -40,3 +40,28 @@ set role anon;
 do $$ begin
   begin perform 1 from tasks; raise exception 'FAIL anon'; exception when insufficient_privilege then raise notice 'OK anon nemá prístup'; end;
 end $$;
+-- prílohy
+reset role;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000c','c@test.sk') on conflict do nothing;
+set role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}',false);
+do $$ declare t uuid; begin
+  insert into tasks (title) values ('s prílohou') returning id into t;
+  insert into attachments (task_id, name, path) values (t, 'a.pdf', '00000000-0000-0000-0000-00000000000a/' || t || '/a.pdf');
+  insert into storage.objects (bucket_id, name) values ('attachments', '00000000-0000-0000-0000-00000000000a/' || t || '/a.pdf');
+  begin
+    insert into storage.objects (bucket_id, name) values ('attachments', '00000000-0000-0000-0000-00000000000c/x/a.pdf');
+    raise exception 'FAIL: súbor do cudzieho priečinka';
+  exception when others then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'OK súbor do cudzieho priečinka odmietnutý'; end;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000c","role":"authenticated"}',false);
+do $$ begin
+  if (select count(*) from attachments) <> 0 or (select count(*) from storage.objects) <> 0 then raise exception 'FAIL: C vidí prílohy A'; end if;
+  raise notice 'OK C nevidí prílohy ani súbory A';
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}',false);
+do $$ begin
+  delete from tasks where title = 's prílohou';
+  if (select count(*) from attachments) <> 0 then raise exception 'FAIL'; end if;
+  raise notice 'OK zmazanie úlohy zmaže záznam prílohy';
+end $$;

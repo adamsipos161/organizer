@@ -43,7 +43,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ selected, select: setSelected, toast, confirm, quickAdd, openQuickAdd, expanded, toggleExpanded }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-3 md:bottom-5">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[200px] z-50 flex flex-col items-center gap-2 px-3 md:bottom-20">
         {toasts.map(t => (
           <div key={t.id} className="pointer-events-auto flex max-w-md items-center gap-3 rounded-xl bg-ink-900 px-4 py-2.5 text-sm text-white shadow-lg">
             <span className="min-w-0 flex-1">{t.text}</span>

@@ -12,7 +12,7 @@ import { Dot, Empty, useUi } from '../components/ui'
 
 export function Page({ title, subtitle, actions, children }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-3xl px-3 pb-28 pt-4 md:px-8 md:pb-12 md:pt-6">
+    <div className="mx-auto w-full max-w-3xl px-3 pb-8 pt-4 md:px-8 md:pb-12 md:pt-6">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold md:text-2xl">{title}</h1>

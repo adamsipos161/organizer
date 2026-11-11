@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from 'react'
 import clsx from 'clsx'
-import { Check, ChevronRight, Flag, GripVertical, MapPin, StickyNote } from 'lucide-react'
+import { Check, ChevronRight, Flag, GripVertical, MapPin, Paperclip, StickyNote } from 'lucide-react'
+import { useAttachmentCount } from '../lib/attachments'
 import { useStore } from '../lib/store'
 import { isDone, openSubs, projectOf, setStatus, updateSubtask } from '../lib/actions'
 import { relativeDay, timeOf, today, formatDay, dayOfIso } from '../lib/dates'
@@ -61,6 +62,7 @@ export function TaskRow({ task, showProject = true, showDue = true, draggable, o
   const done = isDone(task)
   const overdue = !done && task.due_date && task.due_date < today()
   const dn = task.subtasks.filter(s => s.done).length
+  const files = useAttachmentCount(task.id)
 
   const dragProps = draggable ? {
     draggable: true,
@@ -85,6 +87,7 @@ export function TaskRow({ task, showProject = true, showDue = true, draggable, o
         {task.status === 'in_progress' && <span className="hidden rounded-full bg-accent-50 px-2 py-0.5 text-[11px] text-accent-600 sm:inline">Rozpracované</span>}
         <PriorityFlag p={task.priority} />
         {task.note && <StickyNote size={13} className="text-ink-300" />}
+        {files > 0 && <span className="flex items-center text-xs text-ink-300" title={`Prílohy: ${files}`}><Paperclip size={13} />{files > 1 && files}</span>}
         {task.subtasks.length > 0 && <span className="num whitespace-nowrap text-xs text-ink-500">{dn} z {task.subtasks.length}<span className="hidden sm:inline"> hotových</span></span>}
         {showDue && task.due_date && <span className={clsx('num whitespace-nowrap text-xs', overdue ? 'font-medium text-red-600' : 'text-ink-500')}>{relativeDay(task.due_date)}</span>}
         {showProject && p && <span className="hidden items-center gap-1 whitespace-nowrap text-xs text-ink-500 sm:flex"><Dot color={p.color} />{p.name}</span>}
