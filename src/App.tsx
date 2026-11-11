@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { configError, supabase } from './lib/supabase'
 import { store, useStore } from './lib/store'
@@ -14,6 +14,8 @@ export function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [search, setSearch] = useState('')
   const { loaded } = useStore()
+  const { pathname } = useLocation()
+  useEffect(() => { setSearch('') }, [pathname])
 
   useEffect(() => {
     if (configError) return

@@ -113,7 +113,7 @@ export function addProject(name: string): string {
   const id = crypto.randomUUID()
   store.mutate(`Nový projekt „${name}“`, d => {
     d.projects.push({
-      id, user_id: uid(), name: name.trim(), color: PALETTE[d.projects.length % PALETTE.length].hex, archived: false,
+      id, user_id: uid(), name: name.trim(), color: PALETTE[d.projects.length % PALETTE.length].hex, archived: false, note: '',
       sort_order: Math.max(0, ...d.projects.map(p => p.sort_order)) + 1, created_at: nowIso(),
     })
   })
@@ -183,7 +183,7 @@ export function conflicts(d: Data, startIso: string, endIso: string, excludeId?:
 
 export const describeMeeting = (m: Meeting) => `${m.title} (${formatDateTime(m.starts_at)}–${timeOf(m.ends_at)})`
 
-export interface SearchHit { kind: 'task' | 'meeting'; id: string; title: string; detail: string; done: boolean }
+export interface SearchHit { kind: 'task' | 'meeting' | 'project'; id: string; title: string; detail: string; done: boolean }
 
 export function search(d: Data, query: string): SearchHit[] {
   const q = norm(query.trim())
@@ -199,6 +199,12 @@ export function search(d: Data, query: string): SearchHit[] {
   for (const m of d.meetings) {
     if ([m.title, m.note, m.location].some(x => norm(x).includes(q))) {
       hits.push({ kind: 'meeting', id: m.id, title: m.title, detail: [formatDateTime(m.starts_at), projectOf(d, m.project_id)?.name].filter(Boolean).join(' · '), done: false })
+    }
+  }
+  for (const p of d.projects) {
+    if (p.note && norm(p.note).includes(q)) {
+      const line = p.note.split('\n').find(l => norm(l).includes(q)) ?? ''
+      hits.push({ kind: 'project', id: p.id, title: p.name, detail: `poznámka projektu: ${line.trim().slice(0, 90)}`, done: false })
     }
   }
   return hits.sort((a, b) => Number(a.done) - Number(b.done))

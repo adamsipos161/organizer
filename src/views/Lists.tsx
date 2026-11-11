@@ -1,6 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Archive, ArchiveRestore, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, ChevronRight, MoreHorizontal, NotebookPen, Paperclip, Trash2 } from 'lucide-react'
+import { deleteAllFor, useAttachmentCount } from '../lib/attachments'
+import { AttachmentsSection } from '../components/Attachments'
 import { useStore } from '../lib/store'
 import {
   deleteProject, isDone, meetingsOn, nextDays, overdue, projectOf, reorderTasks, search, sortTasks, tasksDue, updateProject,
@@ -92,6 +94,7 @@ export function TaskListView({ inbox }: { inbox?: boolean }) {
   const nav = useNavigate()
   const [showDone, setShowDone] = useState(false)
   const project = projectOf(data, projectId)
+  const projectFiles = useAttachmentCount({ kind: 'project', id: projectId ?? '' })
   const all = data.tasks.filter(t => t.project_id === projectId)
   const open = sortTasks(all.filter(t => !isDone(t)))
   const done = all.filter(isDone).sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''))
@@ -113,8 +116,16 @@ export function TaskListView({ inbox }: { inbox?: boolean }) {
     <ProjectMenu archived={project.archived}
       onArchive={() => { updateProject(project.id, project.archived ? 'Projekt obnovený' : 'Projekt archivovaný', p => { p.archived = !p.archived }); ui.toast(project.archived ? 'Projekt obnovený z archívu' : 'Projekt archivovaný – úlohy a stretnutia ostávajú uložené', { undo: true }) }}
       onDelete={async () => {
-        const v = await ui.confirm({ title: `Zmazať projekt „${project.name}“?`, message: 'Úlohy a stretnutia projektu sa nezmažú – presunú sa do Inboxu.', buttons: [{ label: 'Zmazať projekt', value: 'del', tone: 'danger' }] })
-        if (v) { deleteProject(project.id); nav('/inbox'); ui.toast('Projekt zmazaný', { undo: true }) }
+        const v = await ui.confirm({
+          title: `Zmazať projekt „${project.name}“?`,
+          message: `Úlohy a stretnutia projektu sa nezmažú – presunú sa do Inboxu.${projectFiles > 0 ? ` Natrvalo sa však zmaže ${projectFiles} ${projectFiles === 1 ? 'príloha' : projectFiles < 5 ? 'prílohy' : 'príloh'} projektu. Ak ich chcete ponechať, projekt radšej archivujte.` : ''}`,
+          buttons: [{ label: 'Zmazať projekt', value: 'del', tone: 'danger' }],
+        })
+        if (!v) return
+        if (projectFiles > 0) {
+          try { await deleteAllFor({ kind: 'project', id: project.id }) } catch (e) { ui.toast(`Prílohy sa nepodarilo zmazať: ${(e as Error).message}`); return }
+        }
+        deleteProject(project.id); nav('/inbox'); ui.toast('Projekt zmazaný', { undo: true })
       }} />
   )
 
@@ -123,6 +134,7 @@ export function TaskListView({ inbox }: { inbox?: boolean }) {
       title={project ? <ProjectTitle id={project.id} name={project.name} color={project.color} /> : 'Inbox'}
       subtitle={project ? (project.archived ? 'Archivovaný projekt' : undefined) : 'Úlohy bez projektu'}
       actions={menu}>
+      {project && <ProjectNotes key={project.id} id={project.id} note={project.note ?? ''} />}
       {upcoming.length > 0 && (<>
         <h2 className="section-title">Nadchádzajúce stretnutia</h2>
         {upcoming.map(m => <MeetingRow key={m.id} meeting={m} showDate />)}
@@ -183,14 +195,15 @@ function ProjectMenu({ archived, onArchive, onDelete }: { archived: boolean; onA
 export function SearchView({ query }: { query: string }) {
   const { data } = useStore()
   const ui = useUi()
+  const nav = useNavigate()
   const hits = useMemo(() => search(data, query), [data, query])
   return (
     <Page title="Hľadanie" subtitle={hits.length ? `${hits.length} výsledkov pre „${query}“ · vrátane hotových úloh` : `Nič sa nenašlo pre „${query}“`}>
       <div className="mt-3">
         {hits.map(h => (
-          <button key={h.kind + h.id} onClick={() => ui.select({ kind: h.kind, id: h.id })}
+          <button key={h.kind + h.id} onClick={() => h.kind === 'project' ? nav(`/projekt/${h.id}`) : ui.select({ kind: h.kind, id: h.id })}
             className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-black/[0.03]">
-            <span className="w-20 shrink-0 text-xs text-ink-500">{h.kind === 'task' ? (h.done ? 'Hotová úloha' : 'Úloha') : 'Stretnutie'}</span>
+            <span className="w-20 shrink-0 text-xs text-ink-500">{h.kind === 'task' ? (h.done ? 'Hotová úloha' : 'Úloha') : h.kind === 'project' ? 'Projekt' : 'Stretnutie'}</span>
             <span className="min-w-0 flex-1">
               <span className={`block truncate text-sm ${h.done ? 'text-ink-500 line-through' : ''}`}>{h.title}</span>
               <span className="block truncate text-xs text-ink-500">{h.detail}</span>
@@ -202,3 +215,34 @@ export function SearchView({ query }: { query: string }) {
   )
 }
 
+
+/** Všeobecné poznámky a prílohy k celému projektu */
+function ProjectNotes({ id, note }: { id: string; note: string }) {
+  const files = useAttachmentCount({ kind: 'project', id })
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(`organizer:notes-open:${id}`) !== '0' } catch { return true }
+  })
+  const [v, setV] = useState(note)
+  useEffect(() => setV(note), [note])
+  const toggle = () => { setOpen(!open); try { localStorage.setItem(`organizer:notes-open:${id}`, open ? '0' : '1') } catch { /* nevadí */ } }
+  const commit = () => { if (v !== note) updateProject(id, 'Poznámky projektu', p => { p.note = v }) }
+  const summary = note.trim() ? note.trim().split('\n')[0].slice(0, 80) : 'Žiadne poznámky'
+  return (
+    <section className="mt-3 rounded-xl border border-line bg-white">
+      <button onClick={toggle} className="flex w-full items-center gap-2 px-3 py-2.5 text-left">
+        <ChevronRight size={15} className={`text-ink-300 transition ${open ? 'rotate-90' : ''}`} />
+        <NotebookPen size={15} className="text-ink-500" />
+        <span className="text-sm font-medium">Poznámky k projektu</span>
+        {!open && <span className="min-w-0 flex-1 truncate text-xs text-ink-500">{summary}</span>}
+        {files > 0 && <span className="ml-auto flex items-center gap-0.5 text-xs text-ink-500"><Paperclip size={12} />{files}</span>}
+      </button>
+      {open && (
+        <div className="space-y-4 border-t border-line px-3 pb-3 pt-3">
+          <textarea value={v} onChange={e => setV(e.target.value)} onBlur={commit} rows={Math.min(14, Math.max(4, v.split('\n').length + 1))}
+            placeholder="Kontakty, dohody, prístupy, odkazy, čokoľvek k projektu…" className="input resize-y leading-relaxed" aria-label="Poznámky k projektu" />
+          <AttachmentsSection owner={{ kind: 'project', id }} title="Prílohy projektu" />
+        </div>
+      )}
+    </section>
+  )
+}

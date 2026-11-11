@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { Download, File, FileImage, FileSpreadsheet, FileText, Loader2, Paperclip, Presentation, Trash2, Upload } from 'lucide-react'
-import { deleteAttachment, formatSize, listAttachments, openAttachment, uploadAttachment, type Attachment } from '../lib/attachments'
+import { deleteAttachment, formatSize, listAttachments, openAttachment, uploadAttachment, type Attachment, type AttachmentOwner } from '../lib/attachments'
 import { formatDateTime } from '../lib/dates'
 import { useUi } from './ui'
 
@@ -14,7 +14,7 @@ function iconFor(a: Attachment) {
   return <File size={16} className="text-ink-500" />
 }
 
-export function AttachmentsSection({ taskId }: { taskId: string }) {
+export function AttachmentsSection({ owner, title = 'Prílohy' }: { owner: AttachmentOwner; title?: string }) {
   const ui = useUi()
   const [items, setItems] = useState<Attachment[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -24,9 +24,9 @@ export function AttachmentsSection({ taskId }: { taskId: string }) {
 
   useEffect(() => {
     let alive = true
-    listAttachments(taskId).then(l => alive && setItems(l)).catch(e => alive && (setItems([]), setError(e.message)))
+    listAttachments(owner).then(l => alive && setItems(l)).catch(e => alive && (setItems([]), setError(e.message)))
     return () => { alive = false }
-  }, [taskId])
+  }, [owner.kind, owner.id])
 
   const upload = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return
@@ -35,7 +35,7 @@ export function AttachmentsSection({ taskId }: { taskId: string }) {
     setBusy(list.length)
     for (const f of list) {
       try {
-        const a = await uploadAttachment(taskId, f)
+        const a = await uploadAttachment(owner, f)
         setItems(x => [...(x ?? []), a])
       } catch (e) { setError((e as Error).message) }
       setBusy(b => b - 1)
@@ -58,7 +58,7 @@ export function AttachmentsSection({ taskId }: { taskId: string }) {
       onDrop={e => { if (e.dataTransfer.files.length) { e.preventDefault(); setDrag(false); void upload(e.dataTransfer.files) } }}
       className={clsx('rounded-lg transition', drag && 'bg-accent-50 ring-2 ring-accent-500/40')}>
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="label">Prílohy</span>
+        <span className="label">{title}</span>
         {items && items.length > 0 && <span className="text-xs text-ink-500">{items.length}</span>}
         <button className="btn-ghost ml-auto px-2 py-1 text-xs" onClick={() => input.current?.click()} disabled={busy > 0}>
           {busy > 0 ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}{busy > 0 ? `Nahrávam (${busy})…` : 'Pridať súbor'}

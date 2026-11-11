@@ -62,7 +62,7 @@ export function TaskRow({ task, showProject = true, showDue = true, draggable, o
   const done = isDone(task)
   const overdue = !done && task.due_date && task.due_date < today()
   const dn = task.subtasks.filter(s => s.done).length
-  const files = useAttachmentCount(task.id)
+  const files = useAttachmentCount({ kind: 'task', id: task.id })
 
   const dragProps = draggable ? {
     draggable: true,

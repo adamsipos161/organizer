@@ -10,6 +10,7 @@ export interface Project {
   archived: boolean
   sort_order: number
   created_at: string
+  note?: string
 }
 
 export interface Subtask {

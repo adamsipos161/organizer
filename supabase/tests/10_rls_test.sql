@@ -65,3 +65,23 @@ do $$ begin
   if (select count(*) from attachments) <> 0 then raise exception 'FAIL'; end if;
   raise notice 'OK zmazanie úlohy zmaže záznam prílohy';
 end $$;
+-- poznámky a prílohy projektu
+do $$ declare p uuid; begin
+  insert into projects (name, note) values ('S poznámkou', 'text') returning id into p;
+  insert into attachments (project_id, name, path) values (p, 'p.pdf', '00000000-0000-0000-0000-00000000000a/project-' || p || '/p.pdf');
+  begin
+    insert into attachments (name, path) values ('x', 'x');
+    raise exception 'FAIL: príloha bez vlastníka';
+  exception when check_violation then raise notice 'OK príloha musí patriť úlohe alebo projektu'; end;
+  delete from projects where id = p;
+  if (select count(*) from attachments) <> 0 then raise exception 'FAIL'; end if;
+  raise notice 'OK zmazanie projektu zmaže záznamy jeho príloh';
+end $$;
+do $$ declare p uuid; begin
+  insert into projects (name) values ('A2') returning id into p;
+  perform set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000c","role":"authenticated"}',false);
+  begin
+    insert into attachments (project_id, name, path) values (p, 'x', 'c/x');
+    raise exception 'FAIL: príloha k cudziemu projektu';
+  exception when others then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'OK príloha k cudziemu projektu odmietnutá'; end;
+end $$;

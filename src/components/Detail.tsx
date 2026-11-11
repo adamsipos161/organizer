@@ -9,7 +9,7 @@ import { dayOfIso, formatDateTime, formatDayLong, minutesBetween, parseTime, rel
 import { PRIORITY_LABEL, STATUS_LABEL, type Meeting, type Task, type TaskStatus } from '../lib/types'
 import { CheckCircle, useToggleDone } from './rows'
 import { AttachmentsSection } from './Attachments'
-import { deleteAllForTask, useAttachmentCount } from '../lib/attachments'
+import { deleteAllFor, useAttachmentCount } from '../lib/attachments'
 import { useUi } from './ui'
 
 export function DetailPanel() {
@@ -59,7 +59,7 @@ function TaskDetail({ task }: { task: Task }) {
   const ui = useUi()
   const toggle = useToggleDone()
   const [newSub, setNewSub] = useState('')
-  const attCount = useAttachmentCount(task.id)
+  const attCount = useAttachmentCount({ kind: 'task', id: task.id })
   const done = task.status === 'done'
   const projects = activeProjects(data)
   const current = data.projects.find(p => p.id === task.project_id)
@@ -127,7 +127,7 @@ function TaskDetail({ task }: { task: Task }) {
         </div>
       </div>
 
-      <AttachmentsSection taskId={task.id} />
+      <AttachmentsSection owner={{ kind: 'task', id: task.id }} />
 
       <div>
         <span className="label">Poznámka</span>
@@ -145,7 +145,7 @@ function TaskDetail({ task }: { task: Task }) {
           })
           if (!v) return
           if (attCount > 0) {
-            try { await deleteAllForTask(task.id) } catch (e) { ui.toast(`Prílohy sa nepodarilo zmazať: ${(e as Error).message}`); return }
+            try { await deleteAllFor({ kind: 'task', id: task.id }) } catch (e) { ui.toast(`Prílohy sa nepodarilo zmazať: ${(e as Error).message}`); return }
           }
           ui.select(null); deleteTask(task.id); ui.toast('Úloha zmazaná', { undo: true })
         }}><Trash2 size={14} />Zmazať</button>
